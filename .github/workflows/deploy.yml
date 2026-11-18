@@ -1,0 +1,49 @@
+name: Publicar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Revisar datos
+        run: node tools/check.js
+
+      # GitHub Pages cachea los archivos 10 minutos. Cambiando ?v= en cada
+      # despliegue el navegador siempre pide la versión nueva de js y css.
+      - name: Versionar archivos
+        run: sed -i "s/?v=dev/?v=${GITHUB_SHA::8}/g" index.html
+
+      - name: Preparar web
+        run: |
+          mkdir _site
+          cp -r index.html styles.css app.js data.js photos.js favicon.svg _site/
+          [ -d img ] && cp -r img _site/ || true
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
