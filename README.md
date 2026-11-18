@@ -10,7 +10,7 @@ Cada intento te dice si te acercas en:
 - **FMS Internacional / World Series**
 - **Red Bull Internacional** (campeón, finalista o nada)
 
-Están todos los MCs que han pasado por FMS España, Argentina, México, Chile, Perú, Colombia y Caribe, más algunas leyendas de Red Bull. El MC del día sale de los más conocidos; en modo libre puedes activar el hardcore y entonces puede tocar cualquiera.
+Están todos los MCs que han pasado por FMS España, Argentina, México, Chile, Perú, Colombia y Caribe, más algunos históricos de Red Bull. También hay modo libre para jugar todas las veces que quieras.
 
 ## Jugar en local
 

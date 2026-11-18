@@ -2,462 +2,476 @@
   "use strict";
 
   const MAX_TRIES = 8;
-  const HINT1_AT = 3;
-  const HINT2_AT = 6;
-  const EPOCH = Date.UTC(2026, 10, 18); // Flowdle #1 = 18/11/2026
-  const STORE = "flowdle:";
+  const FIRST_DAY = Date.UTC(2026, 10, 18); // flowdle #1
 
   const $ = (s) => document.querySelector(s);
   const input = $("#guessInput");
-  const sugList = $("#suggestions");
+  const list = $("#suggestions");
   const board = $("#board");
 
-  // utilidades
-  const norm = (s) =>
-    s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const byName = new Map(MCS.map((m) => [m.name, m]));
 
-  const store = {
-    get(k, fallback) {
-      try {
-        const v = localStorage.getItem(STORE + k);
-        return v ? JSON.parse(v) : fallback;
-      } catch { return fallback; }
-    },
-    set(k, v) {
-      try { localStorage.setItem(STORE + k, JSON.stringify(v)); } catch { /* sin storage */ }
-    },
-  };
+  // quita tildes, espacios y símbolos para poder buscar "valles t" o "exodo"
+  const simplify = (s) =>
+    s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9ñ]/g, "");
 
-  function mulberry32(a) {
+  const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // localStorage puede fallar en modo incógnito, así que mejor no romper nada
+  function load(key, fallback) {
+    try {
+      const v = localStorage.getItem("flowdle:" + key);
+      return v ? JSON.parse(v) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+  function save(key, value) {
+    try {
+      localStorage.setItem("flowdle:" + key, JSON.stringify(value));
+    } catch (e) {}
+  }
+
+  function flag(code) {
+    return `<img class="flag" src="https://flagcdn.com/${code}.svg" alt="${COUNTRIES[code].name}">`;
+  }
+
+  // ---- MC del día ----
+
+  function today() {
+    const d = new Date();
+    return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - FIRST_DAY) / 86400000) + 1;
+  }
+
+  // generador pseudoaleatorio con semilla para que todos tengan el mismo MC
+  function random(seed) {
     return () => {
-      a |= 0; a = (a + 0x6d2b79f5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
 
-  function shuffled(n, seed) {
-    const rnd = mulberry32(seed);
-    const a = [...Array(n).keys()];
+  // se baraja la lista y se va recorriendo; al acabarla se vuelve a barajar
+  function mcOfDay(day) {
+    const n = MCS.length;
+    const round = Math.floor((day - 1) / n);
+    const rnd = random(1234 + round);
+    const order = MCS.map((_, i) => i);
     for (let i = n - 1; i > 0; i--) {
       const j = Math.floor(rnd() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
+      [order[i], order[j]] = [order[j], order[i]];
     }
-    return a;
+    return MCS[order[(((day - 1) % n) + n) % n]];
   }
 
-  function todayNumber() {
-    const d = new Date();
-    return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - EPOCH) / 864e5) + 1;
+  // ---- comparar ----
+
+  function rbLevel(mc) {
+    if (mc.rb > 0) return 1 + mc.rb;
+    return mc.rbf ? 1 : 0;
   }
 
-  // el MC del día solo sale de los conocidos; en hardcore entra cualquiera
-  const POOL = MCS.filter((m) => m.top);
-
-  function dailyTarget(n) {
-    const len = POOL.length;
-    const k = n - 1;
-    const cycle = Math.floor(k / len);
-    const order = shuffled(len, 4207 + cycle * 7919);
-    return POOL[order[((k % len) + len) % len]];
+  function rbText(mc) {
+    if (mc.rb > 1) return `Campeón x${mc.rb}`;
+    if (mc.rb === 1) return "Campeón";
+    return mc.rbf ? "Finalista" : "—";
   }
 
-  const hue = (name) => [...name].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 360, 7);
-  const initials = (name) => {
-    const parts = name.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/);
-    return (parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2)).toUpperCase();
-  };
-  const avatar = (mc) => `<span class="avatar" style="--h:${hue(mc.name)}">${initials(mc.name)}</span>`;
-  const flag = (code, cls = "flag") =>
-    `<img class="${cls}" src="https://flagcdn.com/${code}.svg" alt="${COUNTRIES[code].name}" loading="lazy">`;
-  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
-  const rbRank = (mc) => (mc.rb > 0 ? 1 + mc.rb : mc.rbf ? 1 : 0);
-  const rbLabel = (mc) => (mc.rb > 0 ? `Campeón${mc.rb > 1 ? " ×" + mc.rb : ""}` : mc.rbf ? "Finalista" : "—");
-
-  const byName = new Map(MCS.map((m) => [m.name, m]));
-
-  // comparación
-  function numeric(g, t) {
-    if (g === t) return { color: "green", arrow: "" };
-    return { color: Math.abs(g - t) === 1 ? "yellow" : "red", arrow: t > g ? "▲" : "▼" };
-  }
-
-  function compare(g, t) {
-    const sameCountry = g.c === t.c;
-    const sameRegion = COUNTRIES[g.c].region === COUNTRIES[t.c].region;
-
-    const gl = [...g.ligas].sort().join();
-    const tl = [...t.ligas].sort().join();
-    const overlap = g.ligas.some((l) => t.ligas.includes(l));
-
-    const rbG = rbRank(g), rbT = rbRank(t);
-
+  function compareNumber(guess, real) {
+    if (guess === real) return { color: "green", arrow: "" };
     return {
-      name: g === t ? "green" : "none",
-      country: sameCountry ? "green" : sameRegion ? "yellow" : "red",
-      ligas: gl === tl ? "green" : overlap ? "yellow" : "red",
-      fms: numeric(g.fms, t.fms),
-      intl: numeric(g.intl, t.intl),
-      rb: rbG === rbT ? { color: "green", arrow: "" } : { color: "red", arrow: rbT > rbG ? "▲" : "▼" },
+      color: Math.abs(guess - real) === 1 ? "yellow" : "red",
+      arrow: real > guess ? "▲" : "▼",
     };
   }
 
-  // estado
-  const day = todayNumber();
-  let mode = "daily";
-  let target;
-  let guesses = [];
-  let over = false;
-  let won = false;
-  let revealed = { h1: false, h2: false };
-  let activeIdx = -1;
-  let countdownTimer = null;
-  let hardcore = store.get("hardcore", false);
+  function compare(g, t) {
+    let country = "red";
+    if (g.c === t.c) country = "green";
+    else if (COUNTRIES[g.c].region === COUNTRIES[t.c].region) country = "yellow";
 
-  function loadDaily() {
-    target = dailyTarget(day);
-    const saved = store.get("day-" + day, null);
-    guesses = saved ? saved.guesses.filter((n) => byName.has(n)) : [];
-    revealed = saved?.revealed || { h1: false, h2: false };
+    let ligas = "red";
+    if ([...g.ligas].sort().join() === [...t.ligas].sort().join()) ligas = "green";
+    else if (g.ligas.some((l) => t.ligas.includes(l))) ligas = "yellow";
+
+    const rb = rbLevel(g) === rbLevel(t)
+      ? { color: "green", arrow: "" }
+      : { color: "red", arrow: rbLevel(t) > rbLevel(g) ? "▲" : "▼" };
+
+    return {
+      country,
+      ligas,
+      fms: compareNumber(g.fms, t.fms),
+      intl: compareNumber(g.intl, t.intl),
+      rb,
+    };
   }
 
-  function newFree() {
-    let next;
-    const pool = hardcore ? MCS : POOL;
-    do { next = pool[Math.floor(Math.random() * pool.length)]; } while (next === target);
+  // ---- estado ----
+
+  const day = today();
+  let mode = "daily";
+  let target = null;
+  let guesses = [];
+  let hints = { initial: false, letters: false };
+  let finished = false;
+  let won = false;
+  let timer = null;
+
+  function startDaily() {
+    target = mcOfDay(day);
+    const saved = load("day-" + day, null);
+    guesses = saved ? saved.guesses.filter((n) => byName.has(n)) : [];
+    hints = saved && saved.hints ? saved.hints : { initial: false, letters: false };
+  }
+
+  function startFree() {
+    let next = target;
+    while (next === target) next = MCS[Math.floor(Math.random() * MCS.length)];
     target = next;
     guesses = [];
-    revealed = { h1: false, h2: false };
+    hints = { initial: false, letters: false };
   }
 
-  function persist() {
-    if (mode === "daily") store.set("day-" + day, { guesses, revealed });
+  function saveDay() {
+    if (mode === "daily") save("day-" + day, { guesses, hints });
   }
 
-  // render
-  function rowHTML(mc) {
+  // ---- pintar ----
+
+  function rowHtml(mc) {
     const r = compare(mc, target);
-    const chips = mc.ligas.length
+    const isTarget = mc === target;
+
+    const ligas = mc.ligas.length
       ? `<div class="chips">${mc.ligas.map((l) => `<span class="chip">${LEAGUES[l].name}</span>`).join("")}</div>`
-      : `<span class="big">—</span><span class="sub">Ninguna</span>`;
-    const num = (v, c) =>
-      `<div class="cell ${c.color}" style="--i:3"><span class="big">${v}</span>${c.arrow ? `<span class="arrow">${c.arrow}</span>` : ""}</div>`;
+      : "Ninguna";
+
+    const number = (value, res, i) => `
+      <div class="cell ${res.color}" style="--i:${i}">
+        <span class="num">${value}</span>
+        ${res.arrow ? `<span class="arrow">${res.arrow}</span>` : ""}
+      </div>`;
 
     return `
-      <div class="cell name ${r.name === "green" ? "green" : ""}" style="--i:0">${avatar(mc)}<span>${esc(mc.name)}</span></div>
-      <div class="cell ${r.country}" style="--i:1">${flag(mc.c, "flag country-flag")}<span class="sub">${COUNTRIES[mc.c].name}</span></div>
-      <div class="cell ${r.ligas}" style="--i:2">${chips}</div>
-      ${num(mc.fms, r.fms)}
-      ${num(mc.intl, r.intl).replace("--i:3", "--i:4")}
-      <div class="cell ${r.rb.color}" style="--i:5"><span class="sub" style="font-size:14px">${rbLabel(mc)}</span>${r.rb.arrow ? `<span class="arrow">${r.rb.arrow}</span>` : ""}</div>`;
+      <div class="cell name ${isTarget ? "green" : ""}" style="--i:0">${escapeHtml(mc.name)}</div>
+      <div class="cell ${r.country}" style="--i:1">${flag(mc.c)}${COUNTRIES[mc.c].name}</div>
+      <div class="cell ${r.ligas}" style="--i:2">${ligas}</div>
+      ${number(mc.fms, r.fms, 3)}
+      ${number(mc.intl, r.intl, 4)}
+      <div class="cell ${r.rb.color}" style="--i:5">
+        ${rbText(mc)}
+        ${r.rb.arrow ? `<span class="arrow">${r.rb.arrow}</span>` : ""}
+      </div>`;
   }
 
   function addRow(mc, animate) {
     const row = document.createElement("div");
-    row.className = "row" + (animate ? " anim" : "");
-    row.innerHTML = rowHTML(mc);
-    // la última jugada arriba del todo, justo debajo de la cabecera
-    board.children[0].after(row);
+    row.className = animate ? "row new" : "row";
+    row.innerHTML = rowHtml(mc);
+    board.querySelector(".head").after(row); // el último intento siempre arriba
   }
 
-  function renderBoard() {
+  function drawBoard() {
     board.querySelectorAll(".row:not(.head)").forEach((r) => r.remove());
-    guesses.forEach((n) => addRow(byName.get(n), false));
+    guesses.forEach((name) => addRow(byName.get(name), false));
   }
 
-  function renderMeta() {
-    $("#attempts").innerHTML = `Intentos: <b>${guesses.length}</b>/${MAX_TRIES}`;
-    $("#emptyMsg").hidden = guesses.length > 0;
+  function drawInfo() {
+    $("#attempts").textContent = `Intento ${guesses.length}/${MAX_TRIES}`;
     $("#dayNum").textContent = "#" + day;
 
-    const h1 = $("#hint1"), h2 = $("#hint2");
-    const left1 = HINT1_AT - guesses.length, left2 = HINT2_AT - guesses.length;
-    h1.disabled = left1 > 0 && !over;
-    h2.disabled = left2 > 0 && !over;
-    h1.textContent = left1 > 0 && !over ? `🔒 Inicial (${left1})` : "💡 Inicial";
-    h2.textContent = left2 > 0 && !over ? `🔒 Letras (${left2})` : "💡 Letras";
+    const h1 = $("#hint1");
+    const h2 = $("#hint2");
+    h1.disabled = !finished && guesses.length < 3;
+    h2.disabled = !finished && guesses.length < 6;
+    h1.title = h1.disabled ? "Disponible al tercer intento" : "";
+    h2.title = h2.disabled ? "Disponible al sexto intento" : "";
 
     const lines = [];
-    if (revealed.h1) lines.push(`Empieza por <code>${target.name[0].toUpperCase()}</code>`);
-    if (revealed.h2) {
-      const pattern = [...target.name].map((ch, i, a) =>
-        ch === " " ? "&nbsp;&nbsp;" : i === 0 || i === a.length - 1 ? esc(ch.toUpperCase()) : "_").join(" ");
-      lines.push(`${[...target.name].filter((c) => /\p{L}|\p{N}/u.test(c)).length} caracteres: <code>${pattern}</code>`);
+    if (hints.initial) lines.push(`Empieza por <b>${target.name[0].toUpperCase()}</b>`);
+    if (hints.letters) {
+      const letters = [...target.name].filter((c) => /[\p{L}\p{N}]/u.test(c)).length;
+      const pattern = [...target.name].map((c) => (c === " " ? " / " : "_")).join("");
+      lines.push(`${letters} caracteres: <b>${pattern}</b>`);
     }
-    const ht = $("#hintText");
-    ht.hidden = lines.length === 0;
-    ht.innerHTML = lines.join("<br>");
+    const box = $("#hintText");
+    box.hidden = lines.length === 0;
+    box.innerHTML = lines.join("<br>");
 
-    input.disabled = over;
-    input.placeholder = over ? "Partida terminada" : "Escribe un MC… Chuty, Aczino, Kmbra…";
+    input.disabled = finished;
+    input.placeholder = finished ? "Partida terminada" : "Escribe un MC";
   }
 
-  function emojiGrid() {
-    const e = { green: "🟩", yellow: "🟨", red: "🟥" };
-    return [...guesses].map((n) => {
-      const r = compare(byName.get(n), target);
-      return [r.country, r.ligas, r.fms.color, r.intl.color, r.rb.color].map((c) => e[c]).join("");
-    }).join("\n");
-  }
-
-  function renderResult() {
+  function drawResult() {
     const box = $("#result");
-    if (!over) { box.hidden = true; clearInterval(countdownTimer); return; }
+    clearInterval(timer);
+    if (!finished) {
+      box.hidden = true;
+      return;
+    }
 
-    const facts = [
-      COUNTRIES[target.c].name,
-      target.ligas.length ? "FMS " + target.ligas.map((l) => LEAGUES[l].name).join(" / ") : "Sin FMS",
-      target.fms ? `${target.fms} título${target.fms > 1 ? "s" : ""} FMS` : null,
-      target.rb ? `${target.rb}× campeón Red Bull` : target.rbf ? "Finalista Red Bull" : null,
-    ].filter(Boolean).join(" · ");
+    const facts = [];
+    facts.push(target.ligas.length ? "FMS " + target.ligas.map((l) => LEAGUES[l].name).join(", ") : "Nunca estuvo en FMS");
+    if (target.fms) facts.push(`${target.fms} ${target.fms === 1 ? "título" : "títulos"} FMS`);
+    if (target.rb) facts.push(target.rb === 1 ? "campeón de Red Bull" : `${target.rb} veces campeón de Red Bull`);
+    else if (target.rbf) facts.push("finalista de Red Bull");
 
-    const winMsgs = ["¡TÍTULO!", "¡SIN RÉPLICA!", "¡TRIPLETA!", "¡QUÉ BARRA!", "¡PUNCHLINE!"];
-    const title = won ? winMsgs[guesses.length % winMsgs.length] : "¡RÉPLICA PERDIDA!";
-    const sub = won
-      ? `Lo sacaste en <b>${guesses.length}</b> ${guesses.length === 1 ? "intento" : "intentos"} 🔥`
-      : "El público decide… y hoy no fue tu día. Era:";
+    const title = won
+      ? guesses.length === 1 ? "¡A la primera!" : `¡Bien! En ${guesses.length} intentos`
+      : "Esta vez no";
 
-    box.className = "result " + (won ? "win" : "lose");
     box.innerHTML = `
       <h2>${title}</h2>
-      <p>${sub}</p>
-      <div class="reveal">${avatar(target)} ${esc(target.name)} ${flag(target.c)}</div>
-      <p class="facts">${facts}</p>
+      <div class="who">${flag(target.c)} ${escapeHtml(target.name)}</div>
+      <p class="facts">${facts.join(" · ")}</p>
       <div class="actions">
-        <button class="btn primary" id="btnShare">📋 Compartir</button>
-        <button class="btn ghost" id="btnAgain">${mode === "daily" ? "🔁 Jugar en Libre" : "🔁 Otra partida"}</button>
+        <button class="btn primary" id="btnShare">Compartir</button>
+        <button class="btn" id="btnAgain">${mode === "daily" ? "Jugar en libre" : "Otro"}</button>
       </div>
-      ${mode === "daily" ? `<div class="countdown">Próximo MC en<b id="countdown">--:--:--</b></div>` : ""}`;
+      ${mode === "daily" ? `<p class="next">Siguiente MC en <b id="countdown"></b></p>` : ""}`;
     box.hidden = false;
 
     $("#btnShare").onclick = share;
-    $("#btnAgain").onclick = () => (mode === "daily" ? setMode("free") : startFree());
+    $("#btnAgain").onclick = () => setMode("free");
 
-    clearInterval(countdownTimer);
     if (mode === "daily") {
       const tick = () => {
         const now = new Date();
-        const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        const s = Math.max(0, Math.floor((next - now) / 1000));
-        if (s === 0) { location.reload(); return; }
-        const pad = (x) => String(x).padStart(2, "0");
-        const el = $("#countdown");
-        if (el) el.textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const secs = Math.floor((midnight - now) / 1000);
+        if (secs <= 0) return location.reload();
+        const two = (n) => String(n).padStart(2, "0");
+        $("#countdown").textContent = `${two(Math.floor(secs / 3600))}:${two(Math.floor(secs / 60) % 60)}:${two(secs % 60)}`;
       };
       tick();
-      countdownTimer = setInterval(tick, 1000);
+      timer = setInterval(tick, 1000);
     }
   }
 
-  function renderAll() {
-    renderBoard();
-    renderMeta();
-    renderResult();
-  }
+  // ---- jugar ----
 
-  // jugar
-  function submit(mc) {
-    if (over || !mc || guesses.includes(mc.name)) return;
+  function guess(mc) {
+    if (finished || !mc) return;
+    if (guesses.includes(mc.name)) {
+      toast("Ese ya lo has puesto");
+      return;
+    }
+
     guesses.push(mc.name);
     input.value = "";
-    closeSug();
+    closeList();
     addRow(mc, true);
 
     won = mc === target;
-    over = won || guesses.length >= MAX_TRIES;
-    persist();
-    renderMeta();
+    finished = won || guesses.length >= MAX_TRIES;
+    saveDay();
+    drawInfo();
 
-    if (over) {
-      const delay = 6 * 170 + 450;
+    if (finished) {
+      // esperar a que termine la animación de la fila
       setTimeout(() => {
-        if (mode === "daily") recordStats();
-        renderResult();
-        if (won) confetti();
-        $("#result").scrollIntoView({ behavior: "smooth", block: "center" });
-      }, delay);
+        if (mode === "daily") updateStats();
+        drawResult();
+      }, 1100);
     } else {
       input.focus();
     }
   }
 
-  function recordStats() {
-    const s = store.get("stats", { played: 0, wins: 0, streak: 0, best: 0, dist: Array(MAX_TRIES).fill(0), lastDay: 0, lastWinDay: 0 });
+  function updateStats() {
+    const s = load("stats", { played: 0, wins: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0, 0, 0], lastDay: 0, lastWin: 0 });
     if (s.lastDay === day) return;
+
     s.played++;
+    s.lastDay = day;
     if (won) {
       s.wins++;
-      s.streak = s.lastWinDay === day - 1 ? s.streak + 1 : 1;
+      s.streak = s.lastWin === day - 1 ? s.streak + 1 : 1;
       s.best = Math.max(s.best, s.streak);
       s.dist[guesses.length - 1]++;
-      s.lastWinDay = day;
+      s.lastWin = day;
     } else {
       s.streak = 0;
     }
-    s.lastDay = day;
-    store.set("stats", s);
+    save("stats", s);
   }
 
-  async function share() {
-    const head = mode === "daily"
-      ? `FLOWDLE #${day} 🎤 ${won ? guesses.length : "X"}/${MAX_TRIES}`
-      : `FLOWDLE (libre) 🎤 ${won ? guesses.length : "X"}/${MAX_TRIES}`;
-    const text = `${head}\n${emojiGrid()}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      toast("¡Copiado! Pégalo en el grupo 🔥");
-    } catch {
-      prompt("Copia tu resultado:", text);
+  function share() {
+    const colors = { green: "🟩", yellow: "🟨", red: "🟥" };
+    const rows = guesses.map((name) => {
+      const r = compare(byName.get(name), target);
+      return [r.country, r.ligas, r.fms.color, r.intl.color, r.rb.color].map((c) => colors[c]).join("");
+    });
+    const score = won ? guesses.length : "X";
+    const head = mode === "daily" ? `Flowdle #${day} ${score}/${MAX_TRIES}` : `Flowdle (libre) ${score}/${MAX_TRIES}`;
+    const text = `${head}\n${rows.join("\n")}\n${location.href.split("#")[0]}`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => toast("Copiado"), () => prompt("Cópialo:", text));
+    } else {
+      prompt("Cópialo:", text);
     }
   }
 
-  // autocompletado
-  function matches(q) {
-    const nq = norm(q);
-    if (!nq) return [];
-    return MCS
-      .filter((m) => !guesses.includes(m.name))
-      .map((m) => {
-        const keys = [m.name, ...(m.alias || [])].map(norm);
-        const starts = keys.some((k) => k.startsWith(nq));
-        const word = m.name.split(/\s+/).some((w) => norm(w).startsWith(nq));
-        const has = keys.some((k) => k.includes(nq));
-        return { m, score: starts ? 0 : word ? 1 : has ? 2 : 9 };
-      })
-      .filter((x) => x.score < 9)
-      .sort((a, b) => a.score - b.score || a.m.name.localeCompare(b.m.name))
-      .slice(0, 8)
-      .map((x) => x.m);
+  // ---- buscador ----
+
+  let options = [];
+  let selected = -1;
+
+  function search(text) {
+    const q = simplify(text);
+    if (!q) return [];
+    const results = [];
+    for (const mc of MCS) {
+      if (guesses.includes(mc.name)) continue;
+      const names = [mc.name, ...mc.alias].map(simplify);
+      const words = mc.name.split(" ").map(simplify);
+      let score = -1;
+      if (names.some((n) => n.startsWith(q))) score = 0;
+      else if (words.some((w) => w.startsWith(q))) score = 1;
+      else if (names.some((n) => n.includes(q))) score = 2;
+      if (score >= 0) results.push({ mc, score });
+    }
+    results.sort((a, b) => a.score - b.score || a.mc.name.localeCompare(b.mc.name));
+    return results.slice(0, 8).map((r) => r.mc);
   }
 
-  let current = [];
-  function openSug() {
-    current = matches(input.value);
-    activeIdx = current.length ? 0 : -1;
-    if (!current.length) {
-      sugList.innerHTML = input.value.trim() ? `<li style="cursor:default;color:var(--muted)">Ese MC no está en la base… 🤔</li>` : "";
-      sugList.hidden = !input.value.trim();
+  function openList() {
+    options = search(input.value);
+    selected = options.length ? 0 : -1;
+
+    if (!input.value.trim()) return closeList();
+    if (!options.length) {
+      list.innerHTML = `<li class="none">No está en la lista</li>`;
+      list.hidden = false;
       return;
     }
-    sugList.innerHTML = current.map((m, i) => `
-      <li role="option" data-i="${i}" class="${i === activeIdx ? "active" : ""}">
-        ${flag(m.c)}<span class="s-name">${esc(m.name)}</span>
-        <span class="s-country">${COUNTRIES[m.c].name}</span>
-      </li>`).join("");
-    sugList.hidden = false;
-  }
-  function closeSug() { sugList.hidden = true; sugList.innerHTML = ""; current = []; activeIdx = -1; }
-  function setActive(i) {
-    activeIdx = (i + current.length) % current.length;
-    sugList.querySelectorAll("li").forEach((li, k) => li.classList.toggle("active", k === activeIdx));
-    sugList.children[activeIdx]?.scrollIntoView({ block: "nearest" });
+
+    list.innerHTML = options
+      .map((mc, i) => `
+        <li data-i="${i}" class="${i === 0 ? "active" : ""}">
+          ${flag(mc.c)} ${escapeHtml(mc.name)}
+          <span class="s-country">${COUNTRIES[mc.c].name}</span>
+        </li>`)
+      .join("");
+    list.hidden = false;
   }
 
-  input.addEventListener("input", openSug);
+  function closeList() {
+    list.hidden = true;
+    list.innerHTML = "";
+    options = [];
+    selected = -1;
+  }
+
+  function select(i) {
+    selected = (i + options.length) % options.length;
+    list.querySelectorAll("li").forEach((li, k) => li.classList.toggle("active", k === selected));
+    list.children[selected].scrollIntoView({ block: "nearest" });
+  }
+
+  input.addEventListener("input", openList);
+  input.addEventListener("blur", () => setTimeout(closeList, 150));
   input.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowDown" && current.length) { e.preventDefault(); setActive(activeIdx + 1); }
-    else if (e.key === "ArrowUp" && current.length) { e.preventDefault(); setActive(activeIdx - 1); }
-    else if (e.key === "Escape") closeSug();
-    else if (e.key === "Enter") {
+    if (e.key === "ArrowDown" && options.length) {
       e.preventDefault();
-      const exact = MCS.find((m) => [m.name, ...(m.alias || [])].some((k) => norm(k) === norm(input.value)));
-      const pick = current[activeIdx] || exact;
-      if (pick && guesses.includes(pick.name)) toast("Ya lo has probado 😅");
-      else if (pick) submit(pick);
-      else if (input.value.trim()) {
-        input.parentElement.classList.remove("shake");
-        void input.offsetWidth;
-        input.parentElement.classList.add("shake");
+      select(selected + 1);
+    } else if (e.key === "ArrowUp" && options.length) {
+      e.preventDefault();
+      select(selected - 1);
+    } else if (e.key === "Escape") {
+      closeList();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (options[selected]) {
+        guess(options[selected]);
+      } else if (input.value.trim()) {
+        input.classList.remove("shake");
+        void input.offsetWidth; // reinicia la animación
+        input.classList.add("shake");
       }
     }
   });
-  sugList.addEventListener("mousedown", (e) => {
+  list.addEventListener("mousedown", (e) => {
     const li = e.target.closest("li[data-i]");
-    if (li) { e.preventDefault(); submit(current[+li.dataset.i]); }
+    if (!li) return;
+    e.preventDefault();
+    guess(options[Number(li.dataset.i)]);
   });
-  input.addEventListener("blur", () => setTimeout(closeSug, 120));
 
-  // pistas
-  $("#hint1").onclick = () => { revealed.h1 = true; persist(); renderMeta(); };
-  $("#hint2").onclick = () => { revealed.h2 = true; persist(); renderMeta(); };
+  // ---- pistas, modos y ventanas ----
 
-  // modos
+  $("#hint1").onclick = () => {
+    hints.initial = true;
+    saveDay();
+    drawInfo();
+  };
+  $("#hint2").onclick = () => {
+    hints.letters = true;
+    saveDay();
+    drawInfo();
+  };
+
   function setMode(m) {
     mode = m;
-    document.querySelectorAll(".mode").forEach((b) => b.classList.toggle("active", b.dataset.mode === m));
-    $("#hardcoreWrap").hidden = m !== "free";
-    if (m === "daily") loadDaily(); else newFree();
-    const last = guesses.length ? byName.get(guesses[guesses.length - 1]) : null;
-    won = last === target;
-    over = won || guesses.length >= MAX_TRIES;
-    renderAll();
-    if (!over) input.focus();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === m));
+    if (m === "daily") startDaily();
+    else startFree();
+
+    won = guesses.includes(target.name);
+    finished = won || guesses.length >= MAX_TRIES;
+    drawBoard();
+    drawInfo();
+    drawResult();
+    if (!finished) input.focus();
   }
-  function startFree() { setMode("free"); }
 
-  const hc = $("#hardcore");
-  hc.checked = hardcore;
-  hc.onchange = () => {
-    hardcore = hc.checked;
-    store.set("hardcore", hardcore);
-    toast(hardcore ? "Modo hardcore: puede salir cualquiera 💀" : "Solo MCs conocidos");
-    startFree();
-  };
-  $("#mcCount").textContent = MCS.length;
-  document.querySelectorAll(".mode").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
+  document.querySelectorAll(".tab").forEach((t) => {
+    t.onclick = () => setMode(t.dataset.mode);
+  });
 
-  // modales
   $("#btnHelp").onclick = () => $("#helpModal").showModal();
   $("#btnStats").onclick = () => {
-    const s = store.get("stats", { played: 0, wins: 0, streak: 0, best: 0, dist: Array(MAX_TRIES).fill(0) });
+    const s = load("stats", { played: 0, wins: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0, 0, 0] });
     const max = Math.max(1, ...s.dist);
-    const highlight = mode === "daily" && over && won ? guesses.length - 1 : -1;
+    const last = mode === "daily" && won ? guesses.length - 1 : -1;
     $("#statsBody").innerHTML = `
-      <div class="stats-grid">
+      <div class="stats">
         <div><b>${s.played}</b><span>Jugadas</span></div>
-        <div><b>${s.played ? Math.round((s.wins / s.played) * 100) : 0}%</b><span>Victorias</span></div>
+        <div><b>${s.played ? Math.round((s.wins / s.played) * 100) : 0}</b><span>% victorias</span></div>
         <div><b>${s.streak}</b><span>Racha</span></div>
         <div><b>${s.best}</b><span>Mejor racha</span></div>
       </div>
       <div class="dist">
-        ${s.dist.map((v, i) => `
-          <div class="dist-row"><span class="n">${i + 1}</span>
-            <span class="bar ${i === highlight ? "hl" : ""}" style="width:${Math.max(8, (v / max) * 100)}%">${v}</span>
-          </div>`).join("")}
+        ${s.dist.map((v, i) => `<div>${i + 1} <span class="bar ${i === last ? "hl" : ""}" style="width:${(v / max) * 90 + 5}%">${v}</span></div>`).join("")}
       </div>`;
     $("#statsModal").showModal();
   };
-  document.querySelectorAll(".modal").forEach((d) =>
-    d.addEventListener("click", (e) => { if (e.target === d) d.close(); }));
 
-  // efectos
+  document.querySelectorAll(".modal").forEach((m) => {
+    m.querySelector(".close").onclick = () => m.close();
+    m.addEventListener("click", (e) => {
+      if (e.target === m) m.close();
+    });
+  });
+
   let toastTimer;
   function toast(msg) {
     const t = $("#toast");
     t.textContent = msg;
     t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
   }
 
-  function confetti() {
-    const box = $("#confetti");
-    const colors = ["#ff2bd6", "#22e4ff", "#ffd60a", "#17c964", "#ffffff"];
-    box.innerHTML = Array.from({ length: 110 }, () => {
-      const dur = 2.2 + Math.random() * 2;
-      return `<i style="left:${Math.random() * 100}%;background:${colors[Math.floor(Math.random() * colors.length)]};
-        animation-duration:${dur}s;animation-delay:${Math.random() * .6}s;transform:rotate(${Math.random() * 360}deg)"></i>`;
-    }).join("");
-    setTimeout(() => (box.innerHTML = ""), 4800);
-  }
-
-  // arranque
+  $("#mcCount").textContent = MCS.length;
   setMode("daily");
-  if (!store.get("seenHelp", false)) {
-    store.set("seenHelp", true);
+
+  if (!load("seenHelp", false)) {
+    save("seenHelp", true);
     $("#helpModal").showModal();
   }
 })();
