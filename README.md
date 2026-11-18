@@ -19,6 +19,8 @@ Tienes **8 intentos** para dar con el MC. Cada intento te enseña en qué se par
 | --- | --- | --- | --- |
 | **País** | El mismo | Misma zona (Cono Sur, Andes, Caribe, Centro y Norteamérica) | Nada que ver |
 | **Ligas FMS** | Exactamente las mismas | Coincide alguna | Ninguna en común |
+| **Debut** | Mismo año | Te quedas a un año | Lejos |
+| **Temporadas** | Mismo número | Te quedas a una | Lejos |
 | **Títulos FMS** | Mismo número | Te quedas a uno | Lejos |
 | **FMS Int. / WS** | Mismo número | Te quedas a uno | Lejos |
 | **Red Bull Int.** | Mismo resultado (campeón, finalista o nada) | | Distinto |
@@ -35,10 +37,10 @@ Al terminar puedes compartir el resultado:
 
 ```
 Flowdle #3 4/8
-🟥🟨🟥🟩🟥
-🟩🟨🟥🟩🟩
-🟩🟩🟨🟩🟩
-🟩🟩🟩🟩🟩
+🟥🟨🟥🟨🟩🟩🟩
+🟩🟨🟨🟩🟩🟩🟩
+🟩🟩🟩🟨🟩🟩🟩
+🟩🟩🟩🟩🟩🟩🟩
 ```
 
 ## Qué MCs hay
@@ -79,7 +81,7 @@ tools/fotos.py    prepara las fotos
 3. Si hay un MC nuevo que no es del país de la liga, ponle el país en `INFO` (`c: "ar"`).
 4. `node tools/check.js` para comprobar que todo cuadra.
 
-Las ligas de cada MC se calculan solas a partir de las plantillas.
+Las ligas, el año de debut y el número de temporadas de cada MC se calculan solos a partir de las plantillas.
 
 ## Añadir fotos
 

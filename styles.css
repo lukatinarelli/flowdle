@@ -232,12 +232,12 @@ main {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 600px;
+  min-width: 760px;
 }
 
 .row {
   display: grid;
-  grid-template-columns: 1.5fr repeat(5, 1fr);
+  grid-template-columns: 1.6fr repeat(7, 1fr);
   gap: 6px;
 }
 .row.head div {
@@ -499,8 +499,8 @@ footer {
 
 @media (max-width: 560px) {
   .logo { font-size: 30px; }
-  .board { min-width: 500px; gap: 4px; }
-  .row { grid-template-columns: 1.2fr repeat(5, 1fr); gap: 4px; }
+  .board { min-width: 640px; gap: 4px; }
+  .row { grid-template-columns: 1.3fr repeat(7, 1fr); gap: 4px; }
   .cell { min-height: 58px; font-size: 11px; }
   .cell.name { gap: 6px; padding-left: 6px; font-size: 13px; }
   .cell.name .face { width: 32px; height: 32px; font-size: 11px; }

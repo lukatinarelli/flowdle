@@ -189,9 +189,10 @@ const MCS = (() => {
     for (const [season, players] of Object.entries(seasons)) {
       const year = parseInt(season);
       for (const name of players) {
-        if (!byName.has(name)) byName.set(name, { name, ligas: [], c: null, since: Infinity });
+        if (!byName.has(name)) byName.set(name, { name, ligas: [], c: null, since: Infinity, seasons: 0 });
         const mc = byName.get(name);
         if (!mc.ligas.includes(league)) mc.ligas.push(league);
+        mc.seasons++;
         // por defecto, el país de la primera liga en la que compitió
         if (year < mc.since) {
           mc.since = year;
@@ -203,7 +204,7 @@ const MCS = (() => {
 
   // leyendas de Red Bull y gente que no ha pisado FMS
   for (const name of Object.keys(INFO)) {
-    if (!byName.has(name)) byName.set(name, { name, ligas: [], c: null, since: Infinity });
+    if (!byName.has(name)) byName.set(name, { name, ligas: [], c: null, since: Infinity, seasons: 0 });
   }
 
   return [...byName.values()].map((mc) => {
@@ -213,6 +214,8 @@ const MCS = (() => {
       alias: info.alias || [],
       c: info.c || mc.c,
       ligas: mc.ligas,
+      debut: mc.since === Infinity ? null : mc.since, // primer año en FMS
+      seasons: mc.seasons, // temporadas jugadas, sumando todas las ligas
       fms: info.fms || 0,
       intl: info.intl || 0,
       rb: info.rb || 0,

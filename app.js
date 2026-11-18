@@ -136,9 +136,19 @@
       ? { color: "green", arrow: "" }
       : { color: "red", arrow: rbLevel(t) > rbLevel(g) ? "▲" : "▼" };
 
+    // debut: los que nunca han estado en FMS no tienen año, así que no hay flecha
+    let debut;
+    if (g.debut === null || t.debut === null) {
+      debut = { color: g.debut === t.debut ? "green" : "red", arrow: "" };
+    } else {
+      debut = compareNumber(g.debut, t.debut);
+    }
+
     return {
       country,
       ligas,
+      debut,
+      seasons: compareNumber(g.seasons, t.seasons),
       fms: compareNumber(g.fms, t.fms),
       intl: compareNumber(g.intl, t.intl),
       rb,
@@ -195,9 +205,11 @@
       <div class="cell name ${isTarget ? "green" : ""}" style="--i:0">${face(mc)}<span>${escapeHtml(mc.name)}</span></div>
       <div class="cell ${r.country}" style="--i:1">${flag(mc.c)}${COUNTRIES[mc.c].name}</div>
       <div class="cell ${r.ligas}" style="--i:2">${ligas}</div>
-      ${number(mc.fms, r.fms, 3)}
-      ${number(mc.intl, r.intl, 4)}
-      <div class="cell ${r.rb.color}" style="--i:5">
+      ${number(mc.debut === null ? "—" : mc.debut, r.debut, 3)}
+      ${number(mc.seasons, r.seasons, 4)}
+      ${number(mc.fms, r.fms, 5)}
+      ${number(mc.intl, r.intl, 6)}
+      <div class="cell ${r.rb.color}" style="--i:7">
         ${rbText(mc)}
         ${r.rb.arrow ? `<span class="arrow">${r.rb.arrow}</span>` : ""}
       </div>`;
@@ -271,6 +283,9 @@
 
     const facts = [];
     facts.push(target.ligas.length ? "FMS " + target.ligas.map((l) => LEAGUES[l].name).join(", ") : "Nunca estuvo en FMS");
+    if (target.debut) {
+      facts.push(`debut en ${target.debut}, ${target.seasons} ${target.seasons === 1 ? "temporada" : "temporadas"}`);
+    }
     if (target.fms) facts.push(`${target.fms} ${target.fms === 1 ? "título" : "títulos"} FMS`);
     if (target.rb) facts.push(target.rb === 1 ? "campeón de Red Bull" : `${target.rb} veces campeón de Red Bull`);
     else if (target.rbf) facts.push("finalista de Red Bull");
@@ -371,7 +386,9 @@
     } else {
       rows = guesses.map((name) => {
         const r = compare(byName.get(name), target);
-        return [r.country, r.ligas, r.fms.color, r.intl.color, r.rb.color].map((c) => colors[c]).join("");
+        return [r.country, r.ligas, r.debut.color, r.seasons.color, r.fms.color, r.intl.color, r.rb.color]
+          .map((c) => colors[c])
+          .join("");
       });
     }
     const score = `${won ? guesses.length : "X"}/${maxTries()}`;
