@@ -8,12 +8,20 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=dev" />
 </head>
 <body>
   <header class="top">
-    <h1 class="logo">FLOW<span>DLE</span></h1>
+    <h1 class="logo" aria-label="Flowdle">
+      FLOW<span>DLE</span>
+      <svg class="logo-mic" viewBox="0 0 24 44" aria-hidden="true">
+        <rect x="3" y="1" width="18" height="20" rx="9" fill="#efedf3" />
+        <path d="M3 8h18M3 13h18M8 2v18M12 1v20M16 2v18" stroke="#100e15" stroke-width="1.1" opacity=".3" />
+        <rect x="5" y="19" width="14" height="3" rx="1" fill="#29d9f5" />
+        <path d="M7.5 22h9l-1.5 20h-6z" fill="#ff3d8b" />
+      </svg>
+    </h1>
     <div class="top-btns">
       <button id="btnHelp" class="icon-btn" title="Cómo se juega" aria-label="Cómo se juega">
         <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17.5" r="1.2" fill="currentColor"/></svg>
@@ -23,6 +31,7 @@
       </button>
     </div>
   </header>
+  <p class="tagline">Adivina el MC. <b>Sin réplica.</b></p>
 
   <nav class="tabs">
     <button class="tab active" data-mode="daily">Diario <span id="dayNum"></span></button>
@@ -67,8 +76,7 @@
   </main>
 
   <footer>
-    Datos a noviembre de 2026 · No oficial, sin relación con FMS ni Red Bull ·
-    <a href="https://github.com/lukatinarelli/flowdle">¿Falta alguien?</a>
+    Datos a noviembre de 2026 · No oficial, sin relación con FMS ni Red Bull
   </footer>
 
   <dialog id="helpModal" class="modal">
@@ -98,9 +106,10 @@
   </dialog>
 
   <div id="toast" class="toast" role="status"></div>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
 
-  <script src="data.js"></script>
-  <script src="photos.js"></script>
-  <script src="app.js"></script>
+  <script src="data.js?v=dev"></script>
+  <script src="photos.js?v=dev"></script>
+  <script src="app.js?v=dev"></script>
 </body>
 </html>

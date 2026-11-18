@@ -5,6 +5,7 @@
   const FACE_TRIES = 6;
   const FACE_BLUR = [26, 18, 12, 8, 5, 2]; // px de desenfoque según los fallos
   const FIRST_DAY = Date.UTC(2026, 10, 18); // flowdle #1
+  const WIN_TITLES = ["¡Qué barra!", "¡Título!", "¡Punchline!", "¡Tremendo flow!"];
 
   const $ = (s) => document.querySelector(s);
   const input = $("#guessInput");
@@ -48,8 +49,21 @@
   const hasPhoto = (mc) => photos.has(slug(mc.name));
   const photoUrl = (mc) => `img/mcs/${slug(mc.name)}.webp`;
 
-  function face(mc, cls = "face") {
-    return hasPhoto(mc) ? `<img class="${cls}" src="${photoUrl(mc)}" alt="" loading="lazy">` : "";
+  // sin foto: círculo con las iniciales y un color fijo sacado del nombre
+  function initials(name) {
+    const words = name.replace(/[^\p{L}\p{N} ]/gu, "").trim().split(/\s+/);
+    return (words.length > 1 ? words[0][0] + words[1][0] : words[0].slice(0, 2)).toUpperCase();
+  }
+
+  function hue(name) {
+    let h = 0;
+    for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
+    return h;
+  }
+
+  function face(mc) {
+    if (hasPhoto(mc)) return `<img class="face" src="${photoUrl(mc)}" alt="" loading="lazy">`;
+    return `<span class="face initials" style="--h:${hue(mc.name)}">${initials(mc.name)}</span>`;
   }
 
   // el modo caras necesita unas cuantas fotos para tener gracia
@@ -261,13 +275,20 @@
     if (target.rb) facts.push(target.rb === 1 ? "campeón de Red Bull" : `${target.rb} veces campeón de Red Bull`);
     else if (target.rbf) facts.push("finalista de Red Bull");
 
-    const title = won
-      ? guesses.length === 1 ? "¡A la primera!" : `¡Bien! En ${guesses.length} intentos`
-      : "Esta vez no";
+    let title, sub;
+    if (won) {
+      title = guesses.length === 1 ? "¡Sin réplica!" : WIN_TITLES[guesses.length % WIN_TITLES.length];
+      sub = guesses.length === 1 ? "A la primera" : `En ${guesses.length} intentos`;
+    } else {
+      title = "Réplica perdida";
+      sub = "Era…";
+    }
 
+    box.className = "result " + (won ? "win" : "lose");
     box.innerHTML = `
       <h2>${title}</h2>
-      <div class="who">${face(target, "face big")} ${flag(target.c)} ${escapeHtml(target.name)}</div>
+      <p class="sub">${sub}</p>
+      <div class="who">${face(target)} ${flag(target.c)} ${escapeHtml(target.name)}</div>
       <p class="facts">${facts.join(" · ")}</p>
       <div class="actions">
         <button class="btn primary" id="btnShare">Compartir</button>
@@ -317,6 +338,7 @@
       setTimeout(() => {
         if (mode === "daily") updateStats();
         drawResult();
+        if (won) confetti();
       }, mode === "faces" ? 400 : 1100);
     } else {
       input.focus();
@@ -511,6 +533,22 @@
       if (e.target === m) m.close();
     });
   });
+
+  function confetti() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const box = $("#confetti");
+    const colors = ["#ff3d8b", "#29d9f5", "#ffcc00", "#efedf3"];
+    let html = "";
+    for (let i = 0; i < 90; i++) {
+      const left = Math.random() * 100;
+      const color = colors[i % colors.length];
+      const duration = 2 + Math.random() * 1.8;
+      const delay = Math.random() * 0.5;
+      html += `<i style="left:${left}%;background:${color};animation-duration:${duration}s;animation-delay:${delay}s"></i>`;
+    }
+    box.innerHTML = html;
+    setTimeout(() => (box.innerHTML = ""), 4500);
+  }
 
   let toastTimer;
   function toast(msg) {
