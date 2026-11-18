@@ -6,12 +6,13 @@
 //
 // Fuentes: freestylestats.com, Wikipedia, Mundo Freestyle, Infobae.
 // Actualizado: noviembre de 2026.
-// TODO: faltan las plantillas 2025/26 de todas las ligas menos Argentina.
+// Perú y Caribe no tuvieron liga en 2025/26 (fueron torneos clasificatorios).
 
 const COUNTRIES = {
   es: { name: "España", region: "Europa" },
   ar: { name: "Argentina", region: "Cono Sur" },
   cl: { name: "Chile", region: "Cono Sur" },
+  uy: { name: "Uruguay", region: "Cono Sur" },
   mx: { name: "México", region: "Centro y Norteamérica" },
   gt: { name: "Guatemala", region: "Centro y Norteamérica" },
   sv: { name: "El Salvador", region: "Centro y Norteamérica" },
@@ -45,6 +46,7 @@ const ROSTERS = {
     "2022": ["Blon", "Chuty", "Gazir", "Hander", "Mnak", "Mr. Ego", "Sara Socas", "Sawi Elekipo", "Skone", "Sweet Pain", "Tirpa", "Zasko"],
     "2023": ["Blon", "Chuty", "Gazir", "Jesús LC", "LE33", "Mecha", "Mnak", "Mounts", "Skone", "Sweet Pain", "Tirpa", "Zasko"],
     "2024": ["Alek", "Chuty", "Gazir", "Kmbra", "LE33", "Michu", "Mnak", "Sawi Elekipo", "Sweet Pain", "Zasko"],
+    "2025/26": ["Alek", "Arkano", "Barón", "Chuty", "Dani VK", "Fabiuki", "Nez", "Nitro", "Sweet Pain", "Zasko"],
     "2026/27": ["Arkano", "Babi", "Bélico", "El Menor", "Gazir", "Ibán", "Marithea", "Navas", "Sara Socas", "Sweet Pain"],
   },
   ARG: {
@@ -63,6 +65,7 @@ const ROSTERS = {
     "2022": ["Aczino", "Dante", "Dominic", "Garza", "Jony Beltrán", "Lancer Lirical", "Lobo Estepario", "Rapder", "RC", "Skiper", "Yoiker", "Zticma"],
     "2023": ["Ari Carrillo", "Chang", "Dante", "Dominic", "Kaiser", "Lancer Lirical", "Lobo Estepario", "Lobo López", "Majestic", "RC", "Skiper", "Zticma"],
     "2024": ["Azuky", "Cacha", "Danger AK", "Dominic", "Lobo Estepario", "Maquiavélico", "Rapder", "RC", "Skone", "Valles-T", "Xhavez"],
+    "2025/26": ["Artil", "Azuky", "Jony Beltrán", "KG", "Lobo Estepario", "Marithea", "Nota Roja", "Rapder", "Skone", "Xhavez"],
     "2026/27": ["Azuky", "Chuty", "Dalia Castella", "Jony Beltrán", "Kodigo", "Lobo Estepario", "Nota Roja", "Rapder", "Skone", "Xhavez"],
   },
   CHI: {
@@ -71,6 +74,7 @@ const ROSTERS = {
     "2022": ["Acertijo", "Anubis", "Basek", "Erreka", "JNO", "Jokker", "Joqerr", "Metalingüística", "Nitro", "Rodamiento", "Teorema", "Tom Crowley"],
     "2023": ["Acertijo", "Anubis", "Basek", "El Menor", "Jair Wong", "Joqerr", "Klan", "Nasho", "Rodamiento", "Satim", "Sawi Elekipo", "Teorema"],
     "2024": ["99", "Acertijo", "Anubis", "Blade", "Drose", "El Menor", "Joqerr", "Nitro", "Racso", "Rodamiento"],
+    "2025/26": ["Acertijo", "Basek", "CTZ", "Drose", "Elemece", "El Menor", "Kodigo", "Metalingüística", "Mnak", "Pepe Grillo"],
     "2026/27": ["Animus", "BTI", "Destello", "Drose", "Fusok", "Kaiser", "Metalingüística", "Nitro", "Stuart", "Teorema"],
   },
   PER: {
@@ -83,6 +87,7 @@ const ROSTERS = {
     "2022": ["Airon", "Big Killa", "Carpe Diem", "Chang", "Elevn", "Filósofo", "Gavyria", "Letra", "Lokillo", "Ñko", "RBN", "Valles-T"],
     "2023": ["Airon", "Carpe Diem", "Coloso", "Diego MC", "Ken Zingle", "Lokillo", "Marithea", "Nitro", "Puppy", "RBN", "Stuart", "Valles-T"],
     "2024": ["Airon", "Chang", "Coloso", "Fat N", "Filósofo", "G Sony", "Lokillo", "Marithea", "Puppy", "RBN"],
+    "2025/26": ["Chang", "Fat N", "Filósofo", "Gazir", "Larrix", "Lil White", "Pandora", "Puppy", "Skill", "Valles-T"],
     "2026/27": ["Aczino", "Dima", "Éxodo Lirical", "Fat N", "Filósofo", "Pandora", "Puppy", "Reverse", "Valles-T", "Visionario"],
   },
   CAR: {
@@ -91,122 +96,83 @@ const ROSTERS = {
   },
 };
 
-// c      país, si no es el de su primera liga
+// c      país, si no es el de la primera liga en la que compitió
 // fms    títulos de liga nacional FMS
 // intl   títulos de FMS Internacional + World Series
 // rb     títulos de la Final Internacional de Red Bull Batalla
 // final  finalista de la Internacional de Red Bull sin haberla ganado
-// extra  ligas que no salen en ROSTERS (temporadas que aún no tengo)
-// top    MC conocido: puede salir como MC del día
 const INFO = {
   // España
-  "Chuty": { fms: 5, intl: 2, rb: 2, top: true },
-  "Gazir": { fms: 3, intl: 2, rb: 1, extra: ["COL"], top: true },
-  "Bnet": { fms: 1, rb: 1, top: true },
-  "Skone": { rb: 1, top: true },
-  "Arkano": { rb: 1, top: true },
-  "Invert": { rb: 1, top: true },
-  "Zasko": { top: true },
-  "Blon": { top: true },
-  "Mnak": { top: true },
-  "Sweet Pain": { top: true },
-  "Errecé": { top: true },
-  "Hander": { top: true },
-  "Walls": { top: true },
-  "Force": { top: true },
-  "BTA": { top: true },
-  "Mr. Ego": { top: true },
-  "Sara Socas": { top: true },
-  "Tirpa": { top: true },
-  "Kmbra": { alias: ["Kambra"], top: true },
-  "Sawi Elekipo": { c: "es", alias: ["Elekipo"], top: true },
-  "Rayden": { c: "es", rb: 1, top: true },
-  "Noult": { c: "es", rb: 1, top: true },
-  "Piezas": { c: "es", top: true },
+  "Barón": { c: "uy" },
+  "Chuty": { fms: 5, intl: 2, rb: 2 },
+  "Gazir": { fms: 3, intl: 2, rb: 1 },
+  "Bnet": { fms: 1, rb: 1 },
+  "Skone": { rb: 1 },
+  "Arkano": { rb: 1 },
+  "Invert": { rb: 1 },
+  "Kmbra": { alias: ["Kambra"] },
+  "Sawi Elekipo": { c: "es", alias: ["Elekipo"] },
+  "Rayden": { c: "es", rb: 1 },
+  "Noult": { c: "es", rb: 1 },
+  "Piezas": { c: "es" },
 
   // Argentina
-  "Wos": { fms: 1, rb: 1, top: true },
-  "Trueno": { fms: 1, top: true },
-  "Dtoke": { rb: 1, top: true },
-  "Papo": { fms: 1, alias: ["Papo MC"], top: true },
-  "Mecha": { c: "ar", fms: 1, top: true },
-  "Larrix": { fms: 1, intl: 1, top: true },
-  "Stuart": { fms: 2, top: true },
-  "Klan": { top: true },
-  "Replik": { top: true },
-  "MKS": { top: true },
-  "Nacho": { top: true },
-  "Sub": { top: true },
-  "CTZ": { top: true },
-  "Jesse Pungaz": { top: true },
-  "Cacha": { top: true },
-  "MP": { top: true },
-  "Dybbuk": { top: true },
-  "Exe": { top: true },
-  "Sophia": { top: true },
-  "Facu HDR": { alias: ["HDR"], top: true },
-  "Abel": { c: "ec", top: true },
-  "G Sony": { c: "ar", alias: ["Sony"], top: true },
-  "Kodigo": { c: "ar", fms: 1, top: true },
-  "Acru": { c: "ar", top: true },
-  "Frescolate": { c: "ar", rb: 1, top: true },
+  "Wos": { fms: 1, rb: 1 },
+  "Trueno": { fms: 1 },
+  "Dtoke": { rb: 1 },
+  "Papo": { fms: 1, alias: ["Papo MC"] },
+  "Mecha": { c: "ar", fms: 1 },
+  "Larrix": { fms: 1, intl: 1 },
+  "Stuart": { fms: 2 },
+  "Facu HDR": { alias: ["HDR"] },
+  "G Sony": { c: "ar", alias: ["Sony"] },
+  "Kodigo": { c: "ar", fms: 1 },
+  "Acru": { c: "ar" },
+  "Frescolate": { c: "ar", rb: 1 },
 
   // México
-  "Aczino": { fms: 2, intl: 3, rb: 3, top: true },
-  "Rapder": { c: "mx", fms: 2, rb: 1, top: true },
-  "Jony Beltrán": { fms: 1, final: true, alias: ["Jony B"], top: true },
-  "Lobo Estepario": { fms: 1, top: true },
-  "RC": { top: true },
-  "Skiper": { top: true },
-  "Yoiker": { top: true },
-  "Zticma": { top: true },
-  "Azuky": { top: true },
+  "Aczino": { fms: 2, intl: 3, rb: 3 },
+  "Rapder": { c: "mx", fms: 2, rb: 1 },
+  "Jony Beltrán": { fms: 1, final: true, alias: ["Jony B"] },
+  "Lobo Estepario": { fms: 1 },
   "Hadrian": { c: "mx", rb: 1 },
 
   // Chile
-  "El Menor": { c: "cl", fms: 3, rb: 1, alias: ["Menor", "Elmenor"], top: true },
-  "Teorema": { c: "cl", fms: 1, top: true },
-  "Nitro": { fms: 2, top: true },
-  "Kaiser": { c: "cl", final: true, top: true },
-  "Tom Crowley": { final: true, top: true },
-  "Acertijo": { top: true },
-  "Basek": { top: true },
-  "Metalingüística": { c: "cl", alias: ["Meta", "Metalinguistica"], top: true },
+  "El Menor": { c: "cl", fms: 3, rb: 1, alias: ["Menor", "Elmenor"] },
+  "Teorema": { c: "cl", fms: 1 },
+  "Nitro": { fms: 2 },
+  "Kaiser": { c: "cl", final: true },
+  "Tom Crowley": { final: true },
+  "Metalingüística": { c: "cl", alias: ["Meta", "Metalinguistica"] },
   "Racso": { c: "cl" },
 
   // Perú
-  "Jaze": { fms: 2, top: true },
-  "Skill": { fms: 2, top: true },
-  "KG": { fms: 1, top: true },
-  "Jota": { final: true, top: true },
-  "Choque": { top: true },
-  "Nekroos": { top: true },
-  "Strike": { top: true },
-  "Kian": { top: true },
-  "Vijay Kesh": { alias: ["Vijay", "New Era"], top: true },
-  "Stick": { top: true },
+  "Jaze": { fms: 2 },
+  "Skill": { fms: 2 },
+  "KG": { fms: 1 },
+  "Jota": { final: true },
+  "Vijay Kesh": { alias: ["Vijay", "New Era"] },
   "Jair Wong": { c: "pe" },
   "Diego MC": { c: "pe" },
 
   // Colombia
-  "Valles-T": { c: "co", fms: 2, final: true, alias: ["Valles T"], top: true },
-  "Fat N": { rb: 1, alias: ["Fat-N"], top: true },
-  "Marithea": { c: "co", top: true },
-  "Lokillo": { top: true },
+  "Valles-T": { c: "co", fms: 2, final: true, alias: ["Valles T"] },
+  "Fat N": { rb: 1, alias: ["Fat-N"] },
+  "Marithea": { c: "co" },
   "Filósofo": { c: "co" },
 
   // Caribe
-  "Chang": { c: "ve", fms: 1, top: true },
-  "Letra": { c: "ve", fms: 1, top: true },
-  "Lancer Lirical": { c: "ve", top: true },
-  "Black Code": { c: "ve", alias: ["Blackcode"], top: true },
-  "Mcklopedia": { c: "ve", final: true, alias: ["MC Klopedia"], top: true },
+  "Chang": { c: "ve", fms: 1 },
+  "Letra": { c: "ve", fms: 1 },
+  "Lancer Lirical": { c: "ve" },
+  "Black Code": { c: "ve", alias: ["Blackcode"] },
+  "Mcklopedia": { c: "ve", final: true, alias: ["MC Klopedia"] },
   "Gavyria": { c: "ve", alias: ["Gaviria"] },
   "Ken Zingle": { c: "ve" },
-  "Reverse": { c: "cu", top: true },
-  "Éxodo Lirical": { c: "do", fms: 1, alias: ["Exodo"], top: true },
+  "Reverse": { c: "cu" },
+  "Éxodo Lirical": { c: "do", fms: 1, alias: ["Exodo"] },
   "Yartzi": { c: "pr" },
-  "Link One": { c: "pr", rb: 1, top: true },
+  "Link One": { c: "pr", rb: 1 },
   "Aldahir": { c: "pa" },
   "Ritmodelia": { c: "gt" },
   "Ghetto": { c: "gt" },
@@ -220,33 +186,37 @@ const MCS = (() => {
   const byName = new Map();
 
   for (const [league, seasons] of Object.entries(ROSTERS)) {
-    for (const players of Object.values(seasons)) {
+    for (const [season, players] of Object.entries(seasons)) {
+      const year = parseInt(season);
       for (const name of players) {
-        if (!byName.has(name)) byName.set(name, { name, ligas: [], c: LEAGUES[league].country });
+        if (!byName.has(name)) byName.set(name, { name, ligas: [], c: null, since: Infinity });
         const mc = byName.get(name);
         if (!mc.ligas.includes(league)) mc.ligas.push(league);
+        // por defecto, el país de la primera liga en la que compitió
+        if (year < mc.since) {
+          mc.since = year;
+          mc.c = LEAGUES[league].country;
+        }
       }
     }
   }
 
   // leyendas de Red Bull y gente que no ha pisado FMS
   for (const name of Object.keys(INFO)) {
-    if (!byName.has(name)) byName.set(name, { name, ligas: [], c: null });
+    if (!byName.has(name)) byName.set(name, { name, ligas: [], c: null, since: Infinity });
   }
 
   return [...byName.values()].map((mc) => {
     const info = INFO[mc.name] || {};
-    const ligas = [...mc.ligas, ...(info.extra || [])].filter((l, i, a) => a.indexOf(l) === i);
     return {
       name: mc.name,
       alias: info.alias || [],
       c: info.c || mc.c,
-      ligas,
+      ligas: mc.ligas,
       fms: info.fms || 0,
       intl: info.intl || 0,
       rb: info.rb || 0,
       rbf: !!info.final,
-      top: !!info.top,
     };
   });
 })();
