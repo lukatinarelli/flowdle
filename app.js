@@ -52,12 +52,15 @@
     return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - EPOCH) / 864e5) + 1;
   }
 
+  // el MC del día solo sale de los conocidos; en hardcore entra cualquiera
+  const POOL = MCS.filter((m) => m.top);
+
   function dailyTarget(n) {
-    const len = MCS.length;
+    const len = POOL.length;
     const k = n - 1;
     const cycle = Math.floor(k / len);
     const order = shuffled(len, 4207 + cycle * 7919);
-    return MCS[order[((k % len) + len) % len]];
+    return POOL[order[((k % len) + len) % len]];
   }
 
   const hue = (name) => [...name].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 360, 7);
@@ -111,6 +114,7 @@
   let revealed = { h1: false, h2: false };
   let activeIdx = -1;
   let countdownTimer = null;
+  let hardcore = store.get("hardcore", false);
 
   function loadDaily() {
     target = dailyTarget(day);
@@ -121,7 +125,8 @@
 
   function newFree() {
     let next;
-    do { next = MCS[Math.floor(Math.random() * MCS.length)]; } while (MCS.length > 1 && next === target);
+    const pool = hardcore ? MCS : POOL;
+    do { next = pool[Math.floor(Math.random() * pool.length)]; } while (next === target);
     target = next;
     guesses = [];
     revealed = { h1: false, h2: false };
@@ -135,7 +140,7 @@
   function rowHTML(mc) {
     const r = compare(mc, target);
     const chips = mc.ligas.length
-      ? `<div class="chips">${mc.ligas.map((l) => `<span class="chip">${LEAGUES[l]}</span>`).join("")}</div>`
+      ? `<div class="chips">${mc.ligas.map((l) => `<span class="chip">${LEAGUES[l].name}</span>`).join("")}</div>`
       : `<span class="big">—</span><span class="sub">Ninguna</span>`;
     const num = (v, c) =>
       `<div class="cell ${c.color}" style="--i:3"><span class="big">${v}</span>${c.arrow ? `<span class="arrow">${c.arrow}</span>` : ""}</div>`;
@@ -203,7 +208,7 @@
 
     const facts = [
       COUNTRIES[target.c].name,
-      target.ligas.length ? "FMS " + target.ligas.map((l) => LEAGUES[l]).join(" / ") : "Sin FMS",
+      target.ligas.length ? "FMS " + target.ligas.map((l) => LEAGUES[l].name).join(" / ") : "Sin FMS",
       target.fms ? `${target.fms} título${target.fms > 1 ? "s" : ""} FMS` : null,
       target.rb ? `${target.rb}× campeón Red Bull` : target.rbf ? "Finalista Red Bull" : null,
     ].filter(Boolean).join(" · ");
@@ -382,6 +387,7 @@
   function setMode(m) {
     mode = m;
     document.querySelectorAll(".mode").forEach((b) => b.classList.toggle("active", b.dataset.mode === m));
+    $("#hardcoreWrap").hidden = m !== "free";
     if (m === "daily") loadDaily(); else newFree();
     const last = guesses.length ? byName.get(guesses[guesses.length - 1]) : null;
     won = last === target;
@@ -391,6 +397,16 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function startFree() { setMode("free"); }
+
+  const hc = $("#hardcore");
+  hc.checked = hardcore;
+  hc.onchange = () => {
+    hardcore = hc.checked;
+    store.set("hardcore", hardcore);
+    toast(hardcore ? "Modo hardcore: puede salir cualquiera 💀" : "Solo MCs conocidos");
+    startFree();
+  };
+  $("#mcCount").textContent = MCS.length;
   document.querySelectorAll(".mode").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
 
   // modales

@@ -28,6 +28,9 @@
     <button class="mode active" data-mode="daily">🗓️ Diario <span id="dayNum" class="pill"></span></button>
     <button class="mode" data-mode="free">🔁 Libre</button>
   </nav>
+  <label id="hardcoreWrap" class="hardcore" hidden>
+    <input type="checkbox" id="hardcore" /> <span>💀 Hardcore: puede salir cualquier MC de FMS</span>
+  </label>
 
   <main>
     <section class="play">
@@ -84,7 +87,8 @@
       <li>▲ el MC secreto tiene <b>más</b> · ▼ tiene <b>menos</b>.</li>
     </ul>
     <p>A los 3 intentos se desbloquea la <b>inicial</b> y a los 6 el <b>número de letras</b>.</p>
-    <p class="muted">Modo <b>Diario</b>: un MC nuevo cada día a medianoche, igual para todos. Modo <b>Libre</b>: partidas infinitas para entrenar.</p>
+    <p class="muted">Hay <b id="mcCount"></b> MCs: todos los que han pasado por FMS (España, Argentina, México, Chile, Perú, Colombia y Caribe) más leyendas de Red Bull.</p>
+    <p class="muted">Modo <b>Diario</b>: un MC nuevo cada día a medianoche, igual para todos. Modo <b>Libre</b>: partidas infinitas para entrenar, con modo hardcore si te atreves.</p>
   </dialog>
 
   <!-- Estadísticas -->

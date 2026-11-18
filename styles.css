@@ -135,6 +135,20 @@ body {
   font-size: 12px;
 }
 
+.hardcore {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 16px 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hardcore[hidden] { display: none; }
+.hardcore input { accent-color: var(--pink); width: 17px; height: 17px; }
+
 /* zona de juego */
 main { max-width: 900px; margin: 0 auto; padding: 0 16px; }
 

@@ -10,7 +10,7 @@ Cada intento te dice si te acercas en:
 - **FMS Internacional / World Series**
 - **Red Bull Internacional** (campeón, finalista o nada)
 
-También hay modo libre para jugar todas las veces que quieras.
+Están todos los MCs que han pasado por FMS España, Argentina, México, Chile, Perú, Colombia y Caribe, más algunas leyendas de Red Bull. El MC del día sale de los más conocidos; en modo libre puedes activar el hardcore y entonces puede tocar cualquiera.
 
 ## Jugar en local
 
@@ -22,6 +22,6 @@ python3 -m http.server
 
 ## Añadir MCs
 
-Todo está en `data.js`. Si falta alguien o hay algún dato mal, abre un issue o un PR.
+Todo está en `data.js`. Las ligas de cada MC salen de las plantillas de cada temporada (`ROSTERS`), y los títulos y demás van en `INFO`. Si falta alguien o hay algún dato mal, abre un issue o un PR.
 
 Datos actualizados a noviembre de 2026.
