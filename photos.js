@@ -1,2 +1,2 @@
 // Generado por tools/fotos.py, no editar a mano
-const PHOTOS = [];
+const PHOTOS = ["alek", "arkano", "babi", "baron", "belico", "blon", "bnet", "bta", "cacha", "chuty", "ctz", "dac", "dani", "dani-vk", "dtoke", "dybbuk", "el-menor", "errece", "fabiuki", "force", "g-sony", "gazir", "hander", "invert", "jaff", "jesus-lc", "katra", "khan", "klan", "kmbra", "larrix", "le33", "marithea", "mecha", "michu", "mks", "mnak", "mounts", "mp", "mr-ego", "nacho", "naista", "navas", "nez", "nitro", "papo", "replik", "sara-socas", "sawi-elekipo", "skone", "stuart", "sub", "sweet-pain", "tata", "tirpa", "trueno", "walls", "wolf", "wos", "zaina", "zasko"];
