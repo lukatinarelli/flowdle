@@ -23,6 +23,8 @@ body {
 
 button { font: inherit; color: inherit; }
 
+[hidden] { display: none !important; }
+
 /* cabecera */
 .top {
   display: flex;
@@ -218,8 +220,10 @@ main {
 .cell.red { background: var(--red); }
 
 .cell.name {
-  align-items: flex-start;
-  padding-left: 12px;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 10px;
+  padding-left: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
   font-size: 15px;
@@ -240,6 +244,56 @@ main {
 .cell .flag { width: 30px; height: 20px; }
 .chips { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
 .chip { font-size: 11px; padding: 1px 5px; background: rgba(0, 0, 0, .2); border-radius: 3px; }
+
+/* fotos */
+.face {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #2a2a2a;
+}
+.suggestions .face { width: 28px; height: 28px; }
+.result .face.big { width: 64px; height: 64px; }
+
+/* modo caras */
+.face-game { margin-top: 22px; text-align: center; }
+.face-frame {
+  width: 240px;
+  height: 240px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+#faceImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.12); /* para que el desenfoque no deje bordes */
+  transition: filter .5s;
+  user-select: none;
+  pointer-events: none;
+}
+.face-guesses {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.face-guesses li {
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--red);
+  font-size: 13px;
+  font-weight: 600;
+}
+.face-guesses li.ok { background: var(--green); }
 
 /* resultado */
 .result {
@@ -350,7 +404,8 @@ footer a { color: var(--muted); }
   .board { min-width: 500px; gap: 4px; }
   .row { grid-template-columns: 1.2fr repeat(5, 1fr); gap: 4px; }
   .cell { min-height: 58px; font-size: 11px; }
-  .cell.name { font-size: 13px; padding-left: 8px; }
+  .cell.name { font-size: 13px; padding-left: 6px; gap: 6px; }
+  .cell.name .face { width: 32px; height: 32px; }
   .cell .num { font-size: 19px; }
   .cell .flag { width: 24px; height: 16px; }
   .chip { font-size: 10px; padding: 1px 3px; }

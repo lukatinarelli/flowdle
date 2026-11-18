@@ -27,6 +27,7 @@
   <nav class="tabs">
     <button class="tab active" data-mode="daily">Diario <span id="dayNum"></span></button>
     <button class="tab" data-mode="free">Libre</button>
+    <button class="tab" data-mode="faces" id="tabFaces" hidden>Caras</button>
   </nav>
 
   <main>
@@ -43,6 +44,11 @@
       </span>
     </div>
     <p id="hintText" class="hint-text" hidden></p>
+
+    <section id="faceGame" class="face-game" hidden>
+      <div class="face-frame"><img id="faceImg" alt="¿Quién es?" draggable="false"></div>
+      <ul id="faceGuesses" class="face-guesses"></ul>
+    </section>
 
     <section id="result" class="result" hidden></section>
 
@@ -82,7 +88,7 @@
       <dd>Si ha ganado la Final Internacional, si llegó a la final o nada.</dd>
     </dl>
     <p>Las flechas indican si el MC que buscas tiene más (▲) o menos (▼).</p>
-    <p class="muted">A los 3 intentos puedes ver la inicial y a los 6 cuántas letras tiene. El diario cambia a medianoche; en libre puedes jugar las veces que quieras. Están todos los que han pasado por FMS (<span id="mcCount"></span> MCs) y algunos históricos de Red Bull.</p>
+    <p class="muted">A los 3 intentos puedes ver la inicial y a los 6 cuántas letras tiene. El diario cambia a medianoche; en libre puedes jugar las veces que quieras. En caras tienes 6 intentos para reconocer al MC por la foto, que se va viendo mejor con cada fallo. Están todos los que han pasado por FMS (<span id="mcCount"></span> MCs) y algunos históricos de Red Bull.</p>
   </dialog>
 
   <dialog id="statsModal" class="modal">
@@ -94,6 +100,7 @@
   <div id="toast" class="toast" role="status"></div>
 
   <script src="data.js"></script>
+  <script src="photos.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

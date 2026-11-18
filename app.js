@@ -2,6 +2,8 @@
   "use strict";
 
   const MAX_TRIES = 8;
+  const FACE_TRIES = 6;
+  const FACE_BLUR = [26, 18, 12, 8, 5, 2]; // px de desenfoque según los fallos
   const FIRST_DAY = Date.UTC(2026, 10, 18); // flowdle #1
 
   const $ = (s) => document.querySelector(s);
@@ -35,6 +37,26 @@
   function flag(code) {
     return `<img class="flag" src="https://flagcdn.com/${code}.svg" alt="${COUNTRIES[code].name}">`;
   }
+
+  // ---- fotos ----
+  // tools/fotos.py deja las fotos en img/mcs/ y la lista en photos.js
+
+  const slug = (name) =>
+    name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  const photos = new Set(typeof PHOTOS !== "undefined" ? PHOTOS : []);
+  const hasPhoto = (mc) => photos.has(slug(mc.name));
+  const photoUrl = (mc) => `img/mcs/${slug(mc.name)}.webp`;
+
+  function face(mc, cls = "face") {
+    return hasPhoto(mc) ? `<img class="${cls}" src="${photoUrl(mc)}" alt="" loading="lazy">` : "";
+  }
+
+  // el modo caras necesita unas cuantas fotos para tener gracia
+  const FACES_MIN = 5;
+  const withPhoto = MCS.filter(hasPhoto);
+
+  const maxTries = () => (mode === "faces" ? FACE_TRIES : MAX_TRIES);
 
   // ---- MC del día ----
 
@@ -127,9 +149,9 @@
     hints = saved && saved.hints ? saved.hints : { initial: false, letters: false };
   }
 
-  function startFree() {
-    let next = target;
-    while (next === target) next = MCS[Math.floor(Math.random() * MCS.length)];
+  function startRandom(pool) {
+    let next = pool[Math.floor(Math.random() * pool.length)];
+    while (next === target && pool.length > 1) next = pool[Math.floor(Math.random() * pool.length)];
     target = next;
     guesses = [];
     hints = { initial: false, letters: false };
@@ -156,7 +178,7 @@
       </div>`;
 
     return `
-      <div class="cell name ${isTarget ? "green" : ""}" style="--i:0">${escapeHtml(mc.name)}</div>
+      <div class="cell name ${isTarget ? "green" : ""}" style="--i:0">${face(mc)}<span>${escapeHtml(mc.name)}</span></div>
       <div class="cell ${r.country}" style="--i:1">${flag(mc.c)}${COUNTRIES[mc.c].name}</div>
       <div class="cell ${r.ligas}" style="--i:2">${ligas}</div>
       ${number(mc.fms, r.fms, 3)}
@@ -168,6 +190,13 @@
   }
 
   function addRow(mc, animate) {
+    if (mode === "faces") {
+      const li = document.createElement("li");
+      li.className = mc === target ? "ok" : "";
+      li.textContent = mc.name;
+      $("#faceGuesses").append(li);
+      return;
+    }
     const row = document.createElement("div");
     row.className = animate ? "row new" : "row";
     row.innerHTML = rowHtml(mc);
@@ -176,11 +205,24 @@
 
   function drawBoard() {
     board.querySelectorAll(".row:not(.head)").forEach((r) => r.remove());
+    $("#faceGuesses").innerHTML = "";
     guesses.forEach((name) => addRow(byName.get(name), false));
   }
 
+  function drawFace() {
+    if (mode !== "faces") return;
+    const img = $("#faceImg");
+    if (img.dataset.mc !== target.name) {
+      img.dataset.mc = target.name;
+      img.src = photoUrl(target);
+    }
+    const blur = finished ? 0 : FACE_BLUR[Math.min(guesses.length, FACE_BLUR.length - 1)];
+    img.style.filter = `blur(${blur}px)`;
+  }
+
   function drawInfo() {
-    $("#attempts").textContent = `Intento ${guesses.length}/${MAX_TRIES}`;
+    drawFace();
+    $("#attempts").textContent = `Intento ${guesses.length}/${maxTries()}`;
     $("#dayNum").textContent = "#" + day;
 
     const h1 = $("#hint1");
@@ -225,7 +267,7 @@
 
     box.innerHTML = `
       <h2>${title}</h2>
-      <div class="who">${flag(target.c)} ${escapeHtml(target.name)}</div>
+      <div class="who">${face(target, "face big")} ${flag(target.c)} ${escapeHtml(target.name)}</div>
       <p class="facts">${facts.join(" · ")}</p>
       <div class="actions">
         <button class="btn primary" id="btnShare">Compartir</button>
@@ -235,7 +277,7 @@
     box.hidden = false;
 
     $("#btnShare").onclick = share;
-    $("#btnAgain").onclick = () => setMode("free");
+    $("#btnAgain").onclick = () => setMode(mode === "daily" ? "free" : mode);
 
     if (mode === "daily") {
       const tick = () => {
@@ -266,7 +308,7 @@
     addRow(mc, true);
 
     won = mc === target;
-    finished = won || guesses.length >= MAX_TRIES;
+    finished = won || guesses.length >= maxTries();
     saveDay();
     drawInfo();
 
@@ -275,7 +317,7 @@
       setTimeout(() => {
         if (mode === "daily") updateStats();
         drawResult();
-      }, 1100);
+      }, mode === "faces" ? 400 : 1100);
     } else {
       input.focus();
     }
@@ -301,12 +343,18 @@
 
   function share() {
     const colors = { green: "🟩", yellow: "🟨", red: "🟥" };
-    const rows = guesses.map((name) => {
-      const r = compare(byName.get(name), target);
-      return [r.country, r.ligas, r.fms.color, r.intl.color, r.rb.color].map((c) => colors[c]).join("");
-    });
-    const score = won ? guesses.length : "X";
-    const head = mode === "daily" ? `Flowdle #${day} ${score}/${MAX_TRIES}` : `Flowdle (libre) ${score}/${MAX_TRIES}`;
+    let rows;
+    if (mode === "faces") {
+      rows = [guesses.map((name) => (name === target.name ? "🟩" : "🟥")).join("")];
+    } else {
+      rows = guesses.map((name) => {
+        const r = compare(byName.get(name), target);
+        return [r.country, r.ligas, r.fms.color, r.intl.color, r.rb.color].map((c) => colors[c]).join("");
+      });
+    }
+    const score = `${won ? guesses.length : "X"}/${maxTries()}`;
+    const titles = { daily: `Flowdle #${day}`, free: "Flowdle (libre)", faces: "Flowdle Caras" };
+    const head = `${titles[mode]} ${score}`;
     const text = `${head}\n${rows.join("\n")}\n${location.href.split("#")[0]}`;
 
     if (navigator.clipboard) {
@@ -325,7 +373,8 @@
     const q = simplify(text);
     if (!q) return [];
     const results = [];
-    for (const mc of MCS) {
+    // en caras solo tiene sentido proponer MCs que tengan foto
+    for (const mc of mode === "faces" ? withPhoto : MCS) {
       if (guesses.includes(mc.name)) continue;
       const names = [mc.name, ...mc.alias].map(simplify);
       const words = mc.name.split(" ").map(simplify);
@@ -353,7 +402,7 @@
     list.innerHTML = options
       .map((mc, i) => `
         <li data-i="${i}" class="${i === 0 ? "active" : ""}">
-          ${flag(mc.c)} ${escapeHtml(mc.name)}
+          ${mode === "faces" ? "" : face(mc)} ${flag(mc.c)} ${escapeHtml(mc.name)}
           <span class="s-country">${COUNTRIES[mc.c].name}</span>
         </li>`)
       .join("");
@@ -419,10 +468,15 @@
     mode = m;
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === m));
     if (m === "daily") startDaily();
-    else startFree();
+    else if (m === "faces") startRandom(withPhoto);
+    else startRandom(MCS);
+
+    $(".board-wrap").hidden = m === "faces";
+    $("#faceGame").hidden = m !== "faces";
+    $(".hints").hidden = m === "faces";
 
     won = guesses.includes(target.name);
-    finished = won || guesses.length >= MAX_TRIES;
+    finished = won || guesses.length >= maxTries();
     drawBoard();
     drawInfo();
     drawResult();
@@ -468,6 +522,7 @@
   }
 
   $("#mcCount").textContent = MCS.length;
+  $("#tabFaces").hidden = withPhoto.length < FACES_MIN;
   setMode("daily");
 
   if (!load("seenHelp", false)) {
