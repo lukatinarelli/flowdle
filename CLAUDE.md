@@ -6,6 +6,7 @@ Wordle de freestylers (FMS + Red Bull Batalla). Web estática sin build ni depen
 
 - `data.js`: fuente de verdad de los MCs.
   - `ROSTERS[liga][temporada]` = lista de participantes. Las ligas (`mc.ligas`), el año de debut (`mc.debut`) y las temporadas jugadas (`mc.seasons`) se calculan de aquí; la clave de la temporada empieza por el año ("2020/21" → 2020).
+  - Cada lista de `ROSTERS` va en el orden de la clasificación final; de ahí sale `mc.best` (mejor puesto). La temporada `ONGOING` no cuenta. En las temporadas de grupos (2023) el orden es aproximado: campeón, subcampeón, semifinalistas si se saben y luego por puesto de grupo.
   - `INFO[nombre]` = datos que no salen de las plantillas: `c` (país), `fms`, `intl`, `rb`, `final`, `alias`.
   - El país por defecto es el de la primera liga en la que compitió (por año). Si no es su país real, hay que poner `c` en INFO.
   - MCs que no están en ninguna plantilla (leyendas de Red Bull, Acru, Piezas...) van solo en INFO y necesitan `c`.

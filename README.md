@@ -21,11 +21,12 @@ Tienes **8 intentos** para dar con el MC. Cada intento te enseña en qué se par
 | **Ligas FMS** | Exactamente las mismas | Coincide alguna | Ninguna en común |
 | **Debut** | Mismo año | Te quedas a un año | Lejos |
 | **Temporadas** | Mismo número | Te quedas a una | Lejos |
+| **Mejor puesto** | Mismo puesto | Te quedas a uno | Lejos |
 | **Títulos FMS** | Mismo número | Te quedas a uno | Lejos |
 | **FMS Int. / WS** | Mismo número | Te quedas a uno | Lejos |
 | **Red Bull Int.** | Mismo resultado (campeón, finalista o nada) | | Distinto |
 
-En las columnas de números, ▲ y ▼ te dicen si el MC tiene más o menos. A los 3 intentos puedes ver la inicial y a los 6 cuántas letras tiene.
+En las columnas de números, ▲ y ▼ te dicen si el MC tiene más o menos (en el mejor puesto, ▲ es que quedó más arriba en la tabla). A los 3 intentos puedes ver la inicial y a los 6 cuántas letras tiene.
 
 ### Modos
 
@@ -37,10 +38,10 @@ Al terminar puedes compartir el resultado:
 
 ```
 Flowdle #3 4/8
-🟥🟨🟥🟨🟩🟩🟩
-🟩🟨🟨🟩🟩🟩🟩
-🟩🟩🟩🟨🟩🟩🟩
-🟩🟩🟩🟩🟩🟩🟩
+🟥🟨🟥🟨🟥🟩🟩🟩
+🟩🟨🟨🟩🟨🟩🟩🟩
+🟩🟩🟩🟨🟩🟩🟩🟩
+🟩🟩🟩🟩🟩🟩🟩🟩
 ```
 
 ## Qué MCs hay
@@ -73,7 +74,7 @@ tools/fotos.py    prepara las fotos
 
 ## Añadir una temporada
 
-1. En `data.js`, añade la plantilla a `ROSTERS` en su liga:
+1. En `data.js`, añade la plantilla a `ROSTERS` en su liga, **en el orden de la clasificación final** (de ahí sale el mejor puesto). Si la temporada aún se está jugando, ponla como `ONGOING` para que no cuente:
    ```js
    "2027/28": ["Chuty", "Gazir", "..."],
    ```
@@ -81,7 +82,7 @@ tools/fotos.py    prepara las fotos
 3. Si hay un MC nuevo que no es del país de la liga, ponle el país en `INFO` (`c: "ar"`).
 4. `node tools/check.js` para comprobar que todo cuadra.
 
-Las ligas, el año de debut y el número de temporadas de cada MC se calculan solos a partir de las plantillas.
+Las ligas, el año de debut, el número de temporadas y el mejor puesto de cada MC se calculan solos a partir de las plantillas.
 
 ## Añadir fotos
 

@@ -144,11 +144,21 @@
       debut = compareNumber(g.debut, t.debut);
     }
 
+    // mejor puesto: aquí un número más bajo es mejor, así que ▲ = quedó más arriba
+    let best;
+    if (g.best === null || t.best === null) {
+      best = { color: g.best === t.best ? "green" : "red", arrow: "" };
+    } else {
+      best = compareNumber(g.best, t.best);
+      if (best.arrow) best.arrow = t.best < g.best ? "▲" : "▼";
+    }
+
     return {
       country,
       ligas,
       debut,
       seasons: compareNumber(g.seasons, t.seasons),
+      best,
       fms: compareNumber(g.fms, t.fms),
       intl: compareNumber(g.intl, t.intl),
       rb,
@@ -207,9 +217,10 @@
       <div class="cell ${r.ligas}" style="--i:2">${ligas}</div>
       ${number(mc.debut === null ? "—" : mc.debut, r.debut, 3)}
       ${number(mc.seasons, r.seasons, 4)}
-      ${number(mc.fms, r.fms, 5)}
-      ${number(mc.intl, r.intl, 6)}
-      <div class="cell ${r.rb.color}" style="--i:7">
+      ${number(mc.best === null ? "—" : mc.best + "º", r.best, 5)}
+      ${number(mc.fms, r.fms, 6)}
+      ${number(mc.intl, r.intl, 7)}
+      <div class="cell ${r.rb.color}" style="--i:8">
         ${rbText(mc)}
         ${r.rb.arrow ? `<span class="arrow">${r.rb.arrow}</span>` : ""}
       </div>`;
@@ -386,7 +397,7 @@
     } else {
       rows = guesses.map((name) => {
         const r = compare(byName.get(name), target);
-        return [r.country, r.ligas, r.debut.color, r.seasons.color, r.fms.color, r.intl.color, r.rb.color]
+        return [r.country, r.ligas, r.debut.color, r.seasons.color, r.best.color, r.fms.color, r.intl.color, r.rb.color]
           .map((c) => colors[c])
           .join("");
       });
