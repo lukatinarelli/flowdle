@@ -45,7 +45,7 @@ button { font: inherit; color: inherit; }
   justify-content: space-between;
   max-width: 860px;
   margin: 0 auto;
-  padding: 22px 16px 0;
+  padding: 44px 16px 0; /* el micro sobresale por encima del logo */
 }
 
 .logo {
