@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flowdle</title>
+  <meta name="description" content="El wordle del freestyle: adivina el MC del día de FMS y Red Bull Batalla." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <header class="top">
+    <button id="btnHelp" class="icon-btn" aria-label="Cómo se juega">?</button>
+    <h1 class="logo" aria-label="Flowdle">
+      <span class="logo-flow">FLOW</span><span class="logo-dle">DLE</span>
+      <span class="logo-mic" aria-hidden="true">🎤</span>
+    </h1>
+    <button id="btnStats" class="icon-btn" aria-label="Estadísticas">📊</button>
+  </header>
+  <p class="tagline">Adivina el MC. <b>Sin réplica.</b></p>
+
+  <nav class="modes" aria-label="Modo de juego">
+    <button class="mode active" data-mode="daily">🗓️ Diario <span id="dayNum" class="pill"></span></button>
+    <button class="mode" data-mode="free">🔁 Libre</button>
+  </nav>
+
+  <main>
+    <section class="play">
+      <div class="search">
+        <input id="guessInput" type="text" placeholder="Escribe un MC… Chuty, Aczino, Kmbra…" autocomplete="off" spellcheck="false" aria-label="Escribe el nombre de un MC" />
+        <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
+      </div>
+      <div class="meta">
+        <span id="attempts" class="attempts"></span>
+        <div class="hints">
+          <button id="hint1" class="hint-btn" disabled>💡 Inicial</button>
+          <button id="hint2" class="hint-btn" disabled>💡 Letras</button>
+        </div>
+      </div>
+      <div id="hintText" class="hint-text" hidden></div>
+    </section>
+
+    <section class="board-wrap">
+      <div id="board" class="board">
+        <div class="row head">
+          <div>MC</div>
+          <div>País</div>
+          <div>Ligas FMS</div>
+          <div>Títulos FMS</div>
+          <div>FMS Int.<br /><small>+ World Series</small></div>
+          <div>Red Bull<br /><small>Internacional</small></div>
+        </div>
+      </div>
+      <p id="emptyMsg" class="empty">Tira tu primera barra 👆</p>
+    </section>
+
+    <section id="result" class="result" hidden></section>
+  </main>
+
+  <footer class="legend">
+    <span><i class="sw green"></i>Exacto</span>
+    <span><i class="sw yellow"></i>Cerca</span>
+    <span><i class="sw red"></i>Nada</span>
+    <span>▲▼ más / menos</span>
+    <p class="fine">Datos actualizados a noviembre de 2026 · Fan-made, sin relación con FMS ni Red Bull.</p>
+  </footer>
+
+  <!-- Cómo se juega -->
+  <dialog id="helpModal" class="modal">
+    <form method="dialog"><button class="close" aria-label="Cerrar">✕</button></form>
+    <h2>Cómo se juega</h2>
+    <p>Adivina el <b>MC del día</b> en <b>8 intentos</b>. Cada intento te dice cuánto te acercas:</p>
+    <ul class="help-list">
+      <li><b>País</b>: <span class="tag green">verde</span> mismo país · <span class="tag yellow">amarillo</span> misma región (Cono Sur, Andes, Caribe…).</li>
+      <li><b>Ligas FMS</b>: ligas nacionales en las que ha competido. <span class="tag yellow">amarillo</span> si comparten alguna.</li>
+      <li><b>Títulos FMS</b>: ligas nacionales ganadas. <span class="tag yellow">amarillo</span> si te quedas a 1.</li>
+      <li><b>FMS Int.</b>: títulos de FMS Internacional + World Series.</li>
+      <li><b>Red Bull</b>: mejor resultado en la Final Internacional (campeón, finalista o nada).</li>
+      <li>▲ el MC secreto tiene <b>más</b> · ▼ tiene <b>menos</b>.</li>
+    </ul>
+    <p>A los 3 intentos se desbloquea la <b>inicial</b> y a los 6 el <b>número de letras</b>.</p>
+    <p class="muted">Modo <b>Diario</b>: un MC nuevo cada día a medianoche, igual para todos. Modo <b>Libre</b>: partidas infinitas para entrenar.</p>
+  </dialog>
+
+  <!-- Estadísticas -->
+  <dialog id="statsModal" class="modal">
+    <form method="dialog"><button class="close" aria-label="Cerrar">✕</button></form>
+    <h2>Estadísticas (diario)</h2>
+    <div id="statsBody"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
